@@ -29,6 +29,7 @@ import json
 import re
 import statistics
 import sys
+import time
 from datetime import date
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -214,13 +215,26 @@ def load_house():
 
 
 # ── 抓 API ────────────────────────────────────────────────
+def _get_json(url, tries=4):
+    """抓 JSON，遇暫時性網路錯誤自動重試（GitHub runner 偶發 Network unreachable）。"""
+    req = Request(url, headers={"User-Agent": "linkou-mortgage-bot/1.0"})
+    for i in range(tries):
+        try:
+            with urlopen(req, timeout=120) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as e:                          # noqa: BLE001
+            if i == tries - 1:
+                raise
+            wait = 5 * (i + 1)
+            print(f"  ⚠ 連線失敗（{e}），{wait}s 後重試（{i + 1}/{tries}）")
+            time.sleep(wait)
+
+
 def fetch_all(api):
     rows = []
     for p in range(MAX_PAGES):
         url = f"{api}?page={p}&size={PAGE_SIZE}"
-        req = Request(url, headers={"User-Agent": "linkou-mortgage-bot/1.0"})
-        with urlopen(req, timeout=120) as r:
-            chunk = json.loads(r.read().decode("utf-8"))
+        chunk = _get_json(url)
         rows.extend(chunk)
         print(f"  page={p} 取得 {len(chunk)} 筆（累計 {len(rows)}）")
         if len(chunk) < PAGE_SIZE:
