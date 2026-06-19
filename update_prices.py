@@ -35,7 +35,9 @@ from urllib.request import Request, urlopen
 
 # ── 設定 ──────────────────────────────────────────────────
 API = ("https://data.ntpc.gov.tw/api/datasets/"
-       "ACCE802D-58CC-4DFF-9E7A-9ECC517F78BE/json")
+       "ACCE802D-58CC-4DFF-9E7A-9ECC517F78BE/json")          # 成屋（含透天，用建物型態拆）
+PRESALE_API = ("https://data.ntpc.gov.tw/api/datasets/"
+               "9238CCC2-9701-4CA7-A0A0-EBE4A0669685/json")   # 預售屋
 PAGE_SIZE = 5000
 MAX_PAGES = 40
 PING_M2 = 3.305785
@@ -212,10 +214,10 @@ def load_house():
 
 
 # ── 抓 API ────────────────────────────────────────────────
-def fetch_all():
+def fetch_all(api):
     rows = []
     for p in range(MAX_PAGES):
-        url = f"{API}?page={p}&size={PAGE_SIZE}"
+        url = f"{api}?page={p}&size={PAGE_SIZE}"
         req = Request(url, headers={"User-Agent": "linkou-mortgage-bot/1.0"})
         with urlopen(req, timeout=120) as r:
             chunk = json.loads(r.read().decode("utf-8"))
@@ -234,7 +236,7 @@ def road_of(addr):
 
 
 # ── 主流程 ────────────────────────────────────────────────
-def build_zones():
+def build_zones(raw):
     print("載入商圈多邊形 …")
     zones = load_zones()
     print(f"  {len(zones)} 個商圈：{[z[0] for z in zones]}")
@@ -249,10 +251,6 @@ def build_zones():
             r = (row.get("路名") or "").strip()
             if r:
                 road_zone[r] = (row.get("商圈") or "").strip()
-
-    print("抓取新北開放平臺 API …")
-    raw = fetch_all()
-    print(f"全新北累計 {len(raw)} 筆")
 
     cand = []
     by_coord = by_fallback = unmatched = excl_btype = 0
@@ -408,9 +406,173 @@ def write_js(zones, max_d):
     print(f"✅ 已更新 {DATA_JS}（{len(zones)} 商圈，{total_n} 筆，資料截至 {data_month}）")
 
 
+# ── 三類（成屋／預售／透天）全區行情 → LINKOU_TYPES ──────────
+OFFICE_KW = ("辦公", "商業", "店", "廠", "工業")
+
+
+def btype_class(bt):
+    """依建物型態(rps11)分類：'house' 透天/別墅｜'apt' 集合住宅｜None 其他(辦公/店面…)。"""
+    bt = bt or ""
+    if "透天" in bt or "別墅" in bt:
+        return "house"
+    if any(k in bt for k in OFFICE_KW):
+        return None
+    if "大樓" in bt or "華廈" in bt or "公寓" in bt:
+        return "apt"
+    return None
+
+
+def row_metrics(r):
+    """從一筆 rps 算 metrics；不合格回 None。
+       單價=(總價−車位價)/不含車位坪；排除車位綁約（有車位坪卻 0 元，拆不開會高估）。"""
+    total = num(r.get("rps21_amountsunitdollars"))
+    area = num(r.get("rps15_area"))
+    if not total or not area:
+        return None
+    park_area = num(r.get("rps24_area")) or 0.0
+    park_price = num(r.get("rps25_amountsunitdollars")) or 0.0
+    if park_area > 0 and park_price == 0:            # 車位綁約，拆不開→排除
+        return None
+    ping = (area - park_area) / PING_M2
+    if ping <= 0:
+        return None
+    unit = (total - park_price) / 10000 / ping
+    if unit <= 5 or unit > 200:                      # 去離譜值
+        return None
+    date_raw = r.get("rps07_yyymmddroc") or r.get("rps07")     # 成屋/預售欄名不同
+    build_raw = r.get("rps14_yyymmddroc") or r.get("rps14")
+    ty, by = roc_year(date_raw), roc_year(build_raw)
+    age = (ty - by) if (ty and by and 0 <= ty - by < 80) else None
+    return {"unit": unit, "ping": ping, "total": total / 10000,
+            "age": age, "rooms": num(r.get("rps16_quantity")), "date": roc_int(date_raw)}
+
+
+def collect_type(raw, kind, presale):
+    """收集某類(kind:'apt'/'house')全區 metrics。
+       presale=True：略過 rps12 住宅篩選（預售常為「見其他登記事項」）、改排除解約(rps30)。"""
+    out = []
+    for r in raw:
+        if r.get("district") != "林口區":
+            continue
+        if "建物" not in (r.get("rps01") or ""):
+            continue
+        if btype_class(r.get("rps11")) != kind:
+            continue
+        if presale:
+            if (r.get("rps30") or "").strip():        # 排除解約
+                continue
+        else:
+            if (r.get("rps12") or "") not in RESIDENTIAL:
+                continue
+            if any(k in (r.get("rps26") or "") for k in SPECIAL):
+                continue
+        m = row_metrics(r)
+        if m and m["date"]:
+            out.append(m)
+    return out
+
+
+def recent_year(recs):
+    """以資料最新日回推一年，再去極端值 1%~99%。"""
+    if not recs:
+        return recs
+    max_d = max(c["date"] for c in recs)
+    recs = [c for c in recs if c["date"] >= max_d - 10000]
+    units = sorted(c["unit"] for c in recs)
+    if len(units) >= 20:
+        lo, hi = percentile(units, 0.01), percentile(units, 0.99)
+        recs = [c for c in recs if lo <= c["unit"] <= hi]
+    return recs
+
+
+def type_stat(recs):
+    if not recs:
+        return None
+    u = sorted(c["unit"] for c in recs)
+    tp = sorted(c["total"] for c in recs)
+    pg = sorted(c["ping"] for c in recs)
+    ages = [c["age"] for c in recs if c["age"] is not None]
+    rooms = [c["rooms"] for c in recs if c["rooms"] is not None]
+    return {
+        "unit": round(statistics.median(u), 1),
+        "q1": round(percentile(u, 0.25), 1),
+        "q3": round(percentile(u, 0.75), 1),
+        "total": round(statistics.median(tp)),
+        "ping": round(statistics.median(pg), 1),
+        "age": round(statistics.median(ages)) if ages else None,
+        "room": round(statistics.median(rooms)) if rooms else 0,
+        "n": len(recs),
+    }
+
+
+def build_types(raw_resale, raw_presale):
+    resale = type_stat(recent_year(collect_type(raw_resale, "apt", False)))
+    presale = type_stat(recent_year(collect_type(raw_presale, "apt", True)))
+    house = type_stat(recent_year(collect_type(raw_resale, "house", False)
+                                  + collect_type(raw_presale, "house", True)))
+    for label, s in (("成屋", resale), ("預售", presale), ("透天", house)):
+        if s:
+            print(f"  {label}: n={s['n']} 單價中位={s['unit']} [Q1Q3 {s['q1']}-{s['q3']}] "
+                  f"總價中位={s['total']}萬 屋齡={s['age']} 坪={s['ping']} 房={s['room']}")
+        else:
+            print(f"  {label}: 無足量資料")
+    return {"resale": resale, "presale": presale, "house": house}
+
+
+def write_types_js(types):
+    r, p, h = types["resale"], types["presale"], types["house"]
+    if not r or not p:
+        print("⚠ 成屋或預售三類統計不足，略過 LINKOU_TYPES（保留舊值）")
+        return
+    today = date.today().isoformat()
+    L = []
+    L.append("// <<AUTO-TYPES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改")
+    L.append(f"// ── 林口 成屋／預售／透天 三類行情（自動更新：{today}；近一年） ──")
+    L.append("// 來源：新北開放平臺 實價登錄 — 成屋(ACCE802D，透天同源用建物型態拆出)、預售(9238CCC2)")
+    L.append("// 單價=(總價−車位價)/不含車位坪/10000；排除車位綁約；預售排除解約、無屋齡")
+    L.append("// calc=true 可依預算精準試算坪數；false 樣本少、僅作總價門檻參考")
+    L.append("const LINKOU_TYPES = [")
+    L.append(f'  {{ key: "resale", name: "成屋", sub: "電梯大樓／華廈", tag: "看屋即入住",')
+    L.append(f'    unit: {r["unit"]}, unitRange: [{r["q1"]}, {r["q3"]}], totalMed: {r["total"]}, '
+             f'ageMed: {r["age"] if r["age"] is not None else "null"}, pingMed: {r["ping"]}, roomMed: {r["room"]},')
+    L.append(f'    n: {r["n"]}, window: "近一年", calc: true,')
+    L.append(f'    note: "現成可看實屋、可立即入住，屋齡中位約 {r["age"]} 年。" }},')
+    L.append(f'  {{ key: "presale", name: "預售屋", sub: "興建中／全新", tag: "全新可分期",')
+    L.append(f'    unit: {p["unit"]}, unitRange: [{p["q1"]}, {p["q3"]}], totalMed: {p["total"]}, '
+             f'ageMed: null, pingMed: {p["ping"]}, roomMed: {p["room"]},')
+    L.append(f'    n: {p["n"]}, window: "近一年", calc: true,')
+    L.append(f'    note: "全新、可依工程期分期付款；單價約比成屋高三成，需等交屋。" }},')
+    if h and h["n"] >= 8:
+        L.append(f'  {{ key: "house", name: "透天／別墅", sub: "獨棟含土地", tag: "樣本少·參考",')
+        L.append(f'    unit: {h["unit"]}, unitRange: [{h["q1"]}, {h["q3"]}], totalMed: {h["total"]}, '
+                 f'threshold: 3000, ageMed: {h["age"] if h["age"] is not None else "null"}, pingMed: {h["ping"]}, roomMed: {h["room"]},')
+        L.append(f'    n: {h["n"]}, window: "近一年", calc: false,')
+        L.append(f'    note: "總價門檻約 3,000 萬起、中位約 {h["total"]:,} 萬；近一年林口僅 {h["n"]} 筆成交，僅供方向參考。" }},')
+    L.append("];")
+    L.append("// <<AUTO-TYPES-END>>")
+    block = "\n".join(L)
+
+    content = DATA_JS.read_text(encoding="utf-8")
+    new, n = re.subn(r"// <<AUTO-TYPES-START>>.*?// <<AUTO-TYPES-END>>",
+                     lambda _m: block, content, flags=re.S)
+    if n == 0:
+        print("⚠ 找不到 <<AUTO-TYPES-START/END>> 標記，略過三類更新")
+        return
+    DATA_JS.write_text(new, encoding="utf-8")
+    print(f"✅ 已更新 LINKOU_TYPES（成屋 {r['n']}／預售 {p['n']}／透天 {h['n'] if h else 0}）")
+
+
 def main():
-    zones, max_d = build_zones()
+    print("抓取新北開放平臺 API（成屋）…")
+    raw_resale = fetch_all(API)
+    print(f"全新北成屋累計 {len(raw_resale)} 筆")
+    zones, max_d = build_zones(raw_resale)
     write_js(zones, max_d)
+
+    print("抓取新北開放平臺 API（預售）…")
+    raw_presale = fetch_all(PRESALE_API)
+    print(f"全新北預售累計 {len(raw_presale)} 筆")
+    write_types_js(build_types(raw_resale, raw_presale))
 
 
 if __name__ == "__main__":

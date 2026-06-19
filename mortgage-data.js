@@ -21,37 +21,23 @@ const LINKOU_ZONES = [
 ];
 // <<AUTO-ZONES-END>>
 
-// ── 林口各總價區間對應房產類型（供試算結果快速提示用） ───────
-// 格式：{ min, max, label, summary }
-const LINKOU_PRODUCTS = [
-  {
-    min: 0, max: 1000,
-    label: "1,000 萬以下",
-    summary: "老市區公寓或套房為主・屋齡約 36 年・約 22 坪・1 房",
-  },
-  {
-    min: 1000, max: 1400,
-    label: "1,000–1,400 萬",
-    summary: "中古華廈或住宅大樓・屋齡約 15 年・約 27 坪・2 房",
-  },
-  {
-    min: 1400, max: 1800,
-    label: "1,400–1,800 萬",
-    summary: "住宅大樓為主・屋齡約 11 年・約 31 坪・2 房",
-  },
-  {
-    min: 1800, max: 2500,
-    label: "1,800–2,500 萬",
-    summary: "近年新成屋・屋齡約 8 年・約 38 坪・3 房",
-  },
-  {
-    min: 2500, max: 3500,
-    label: "2,500–3,500 萬",
-    summary: "新成屋大坪數・屋齡約 8 年・約 57 坪・3 房",
-  },
-  {
-    min: 3500, max: 99999,
-    label: "3,500 萬以上",
-    summary: "大坪數住宅大樓或透天厝・屋齡約 11 年・約 94 坪・3 房以上",
-  },
+// <<AUTO-TYPES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改
+// ── 林口 成屋／預售／透天 三類行情（供底部「這筆預算能買什麼」三類比較） ──
+// 來源：新北市政府資料開放平臺 實價登錄 — 成屋(ACCE802D，透天同來源用建物型態拆出)、預售(9238CCC2)
+// 計算口徑：房屋單價 =(總價−車位價)/不含車位坪/10000（萬/坪）；排除車位綁約筆；預售排除解約、無屋齡
+// calc=true 可依預算精準試算坪數；false 樣本少、僅作總價門檻參考
+const LINKOU_TYPES = [
+  { key: "resale", name: "成屋", sub: "電梯大樓／華廈", tag: "看屋即入住",
+    unit: 46.3, unitRange: [42.4, 53.7], totalMed: 1615, ageMed: 15, pingMed: 29.7, roomMed: 2,
+    n: 1470, window: "近一年", calc: true,
+    note: "現成可看實屋、可立即入住，屋齡中位約 15 年。" },
+  { key: "presale", name: "預售屋", sub: "興建中／全新", tag: "全新可分期",
+    unit: 60.1, unitRange: [55.8, 67.1], totalMed: 1746, ageMed: null, pingMed: 26.0, roomMed: 2,
+    n: 1000, window: "近一年", calc: true,
+    note: "全新、可依工程期分期付款；單價約比成屋高三成，需等交屋。" },
+  { key: "house", name: "透天／別墅", sub: "獨棟含土地", tag: "樣本少·參考",
+    unit: 41.9, unitRange: [33.0, 50.7], totalMed: 3708, threshold: 3000, ageMed: 19, pingMed: 84.2, roomMed: 4,
+    n: 63, window: "近一年", calc: false,
+    note: "總價門檻約 3,000 萬起、中位約 3,700 萬；近一年林口僅 63 筆成交，僅供方向參考。" },
 ];
+// <<AUTO-TYPES-END>>
