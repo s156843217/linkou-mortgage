@@ -5,17 +5,18 @@
 */
 
 // <<AUTO-ZONES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改
-// ── 林口各商圈每坪單價（自動更新：2026-06-19；資料截至 民國115年04月，近一年共 662 筆） ──
+// ── 林口各商圈每坪單價（自動更新：2026-06-19；資料截至 民國115年04月，近一年共 697 筆） ──
 // 來源：新北市政府資料開放平臺 不動產買賣實價登錄（每 10 日更新）
+// 商圈分配：門牌座標 × 商圈多邊形（點在多邊形），跨區路自動切分
 // medPrice：中位數（萬/坪）｜priceRange：[Q1,Q3]｜ageMed：屋齡中位數｜roomMed：房數中位數
 // indoorPct：室內(主建物+附屬+陽台)/扣車位登記坪數 之中位數
 const LINKOU_ZONES = [
-  { name: "三井Outlet", medPrice: 54.7, priceRange: [48.7, 64.8], count: 100, ageMed: 12, roomMed: 3, indoorPct: 0.679 },
-  { name: "南勢", medPrice: 55.0, priceRange: [50.8, 56.7], count: 85, ageMed: 7, roomMed: 3, indoorPct: 0.668 },
-  { name: "家樂福商圈", medPrice: 50.3, priceRange: [43.5, 55.9], count: 234, ageMed: 12, roomMed: 3, indoorPct: 0.68 },
-  { name: "北側", medPrice: 45.1, priceRange: [31.5, 53.4], count: 17, ageMed: 18, roomMed: 3, indoorPct: 0.685 },
-  { name: "林口舊市區", medPrice: 47.1, priceRange: [39.4, 56.4], count: 150, ageMed: 13, roomMed: 3, indoorPct: 0.702 },
-  { name: "麗園國小", medPrice: 41.8, priceRange: [30.5, 47.7], count: 76, ageMed: 18, roomMed: 3, indoorPct: 0.723 },
+  { name: "三井Outlet", medPrice: 57.5, priceRange: [47.4, 65.7], count: 144, ageMed: 12, roomMed: 3, indoorPct: 0.675 },
+  { name: "南勢", medPrice: 54.5, priceRange: [47.3, 56.6], count: 94, ageMed: 7, roomMed: 3, indoorPct: 0.672 },
+  { name: "家樂福商圈", medPrice: 50.2, priceRange: [45.6, 56.8], count: 273, ageMed: 11, roomMed: 3, indoorPct: 0.679 },
+  { name: "北側", medPrice: 45.5, priceRange: [42.4, 50.7], count: 73, ageMed: 11, roomMed: 2, indoorPct: 0.698 },
+  { name: "林口舊市區", medPrice: 41.0, priceRange: [30.3, 49.0], count: 84, ageMed: 19, roomMed: 3, indoorPct: 0.882 },
+  { name: "麗園國小", medPrice: 31.2, priceRange: [26.5, 36.9], count: 29, ageMed: 31, roomMed: 3, indoorPct: 0.847 },
 ];
 // <<AUTO-ZONES-END>>
 
