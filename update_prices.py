@@ -51,6 +51,9 @@ GEOJSON = Path("林口價格地圖.geojson")                # 你畫的商圈多
 
 ZONE_ORDER = ["三井Outlet", "南勢", "家樂福商圈", "北側", "林口舊市區", "麗園國小"]
 RESIDENTIAL = {"住家用", "住商用"}
+# 排除的建物型態（rps11）：透天厝/別墅含大片土地，每坪單價與集合住宅不可比，會拉低中位數。
+# 保留 大樓/華廈/公寓（同屬集合住宅、每坪可比）。
+EXCLUDE_BTYPE = ("透天", "別墅")
 SPECIAL = ["親友", "二親等", "特殊關係", "急售", "債務", "拍賣", "法拍",
            "贈與", "含增建", "毛胚", "含裝潢", "含傢俱", "含家具", "瑕疵"]
 
@@ -252,7 +255,7 @@ def build_zones():
     print(f"全新北累計 {len(raw)} 筆")
 
     cand = []
-    by_coord = by_fallback = unmatched = 0
+    by_coord = by_fallback = unmatched = excl_btype = 0
     miss_roads = {}
     for r in raw:
         if r.get("district") != "林口區":
@@ -260,6 +263,9 @@ def build_zones():
         if "建物" not in (r.get("rps01") or ""):
             continue
         if (r.get("rps12") or "") not in RESIDENTIAL:
+            continue
+        if any(t in (r.get("rps11") or "") for t in EXCLUDE_BTYPE):  # 排除透天/別墅
+            excl_btype += 1
             continue
         if any(k in (r.get("rps26") or "") for k in SPECIAL):
             continue
@@ -311,6 +317,7 @@ def build_zones():
     if not cand:
         sys.exit("⚠ 林口住宅無資料，中止（不覆寫）")
 
+    print(f"排除透天/別墅 {excl_btype} 筆")
     print(f"商圈分配：座標命中 {by_coord}、路名備援 {by_fallback}、未命中丟棄 {unmatched}")
     if miss_roads:
         top = sorted(miss_roads.items(), key=lambda kv: -kv[1])[:10]
@@ -376,6 +383,7 @@ def write_js(zones, max_d):
                f"近一年共 {total_n} 筆） ──")
     out.append("// 來源：新北市政府資料開放平臺 不動產買賣實價登錄（每 10 日更新）")
     out.append("// 商圈分配：門牌座標 × 商圈多邊形（點在多邊形），跨區路自動切分")
+    out.append("// 僅集合住宅（大樓/華廈/公寓）；已排除透天厝/別墅、車位、特殊交易")
     out.append("// medPrice：中位數（萬/坪）｜priceRange：[Q1,Q3]｜"
                "ageMed：屋齡中位數｜roomMed：房數中位數")
     out.append("// indoorPct：室內(主建物+附屬+陽台)/扣車位登記坪數 之中位數")
