@@ -6,21 +6,17 @@
 */
 
 // <<AUTO-ZONES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改
-// ── 林口各商圈每坪單價（近一年實價登錄） ──────────────────
-// medPrice：中位數（萬/坪）
-// priceRange：[Q1, Q3]（25%～75% 分位）
-// ageMed：成交屋齡中位數（年）
-// roomMed：成交房數中位數
-// indoorPct：室內坪數佔登記坪數比例（中位數）
-//   室內 = 主建物 + 附屬建物 + 陽台（即扣除「公設」與「車位」後的實際室內面積）
-//   依各地段實價登錄分項面積（rps28 主建物 + rps29 附屬 + rps30 陽台）統計，樣本 1,451 筆
+// ── 林口各商圈每坪單價（自動更新：2026-06-19；資料截至 民國115年04月，近一年共 662 筆） ──
+// 來源：新北市政府資料開放平臺 不動產買賣實價登錄（每 10 日更新）
+// medPrice：中位數（萬/坪）｜priceRange：[Q1,Q3]｜ageMed：屋齡中位數｜roomMed：房數中位數
+// indoorPct：室內(主建物+附屬+陽台)/扣車位登記坪數 之中位數
 const LINKOU_ZONES = [
-  { name: "三井Outlet",  medPrice: 56.2, priceRange: [50.1, 66.1], count: 127, ageMed: 11, roomMed: 3, indoorPct: 0.671 },
-  { name: "南勢",        medPrice: 54.2, priceRange: [46.3, 57.3], count:  66, ageMed:  9, roomMed: 3, indoorPct: 0.668 },
-  { name: "家樂福商圈",  medPrice: 47.2, priceRange: [41.0, 54.4], count: 196, ageMed: 15, roomMed: 3, indoorPct: 0.669 },
-  { name: "北側",        medPrice: 57.0, priceRange: [54.1, 59.6], count:  14, ageMed:  4, roomMed: 2, indoorPct: 0.697 },
-  { name: "林口舊市區",  medPrice: 50.2, priceRange: [41.6, 62.2], count: 123, ageMed:  8, roomMed: 3, indoorPct: 0.670 },
-  { name: "麗園國小",    medPrice: 39.1, priceRange: [29.3, 47.9], count:  82, ageMed: 19, roomMed: 3, indoorPct: 0.658 },
+  { name: "三井Outlet", medPrice: 54.7, priceRange: [48.7, 64.8], count: 100, ageMed: 12, roomMed: 3, indoorPct: 0.679 },
+  { name: "南勢", medPrice: 55.0, priceRange: [50.8, 56.7], count: 85, ageMed: 7, roomMed: 3, indoorPct: 0.668 },
+  { name: "家樂福商圈", medPrice: 50.3, priceRange: [43.5, 55.9], count: 234, ageMed: 12, roomMed: 3, indoorPct: 0.68 },
+  { name: "北側", medPrice: 45.1, priceRange: [31.5, 53.4], count: 17, ageMed: 18, roomMed: 3, indoorPct: 0.685 },
+  { name: "林口舊市區", medPrice: 47.1, priceRange: [39.4, 56.4], count: 150, ageMed: 13, roomMed: 3, indoorPct: 0.702 },
+  { name: "麗園國小", medPrice: 41.8, priceRange: [30.5, 47.7], count: 76, ageMed: 18, roomMed: 3, indoorPct: 0.723 },
 ];
 // <<AUTO-ZONES-END>>
 
