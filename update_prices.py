@@ -424,15 +424,13 @@ def btype_class(bt):
 
 def row_metrics(r):
     """從一筆 rps 算 metrics；不合格回 None。
-       單價=(總價−車位價)/不含車位坪；排除車位綁約（有車位坪卻 0 元，拆不開會高估）。"""
+       單價=(總價−車位價)/不含車位坪（與 LINKOU_ZONES 地段表同口徑，保持一致、不丟樣本）。"""
     total = num(r.get("rps21_amountsunitdollars"))
     area = num(r.get("rps15_area"))
     if not total or not area:
         return None
     park_area = num(r.get("rps24_area")) or 0.0
     park_price = num(r.get("rps25_amountsunitdollars")) or 0.0
-    if park_area > 0 and park_price == 0:            # 車位綁約，拆不開→排除
-        return None
     ping = (area - park_area) / PING_M2
     if ping <= 0:
         return None
@@ -529,7 +527,7 @@ def write_types_js(types):
     L.append("// <<AUTO-TYPES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改")
     L.append(f"// ── 林口 成屋／預售／透天 三類行情（自動更新：{today}；近一年） ──")
     L.append("// 來源：新北開放平臺 實價登錄 — 成屋(ACCE802D，透天同源用建物型態拆出)、預售(9238CCC2)")
-    L.append("// 單價=(總價−車位價)/不含車位坪/10000；排除車位綁約；預售排除解約、無屋齡")
+    L.append("// 單價=(總價−車位價)/不含車位坪/10000（與地段表同口徑）；預售排除解約、無屋齡")
     L.append("// calc=true 可依預算精準試算坪數；false 樣本少、僅作總價門檻參考")
     L.append("const LINKOU_TYPES = [")
     L.append(f'  {{ key: "resale", name: "成屋", sub: "電梯大樓／華廈", tag: "看屋即入住",')
