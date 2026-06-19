@@ -5,6 +5,7 @@
    ※ 北側商圈樣本數不足（近一年僅 11 筆），維持前期數字供參考
 */
 
+// <<AUTO-ZONES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改
 // ── 林口各商圈每坪單價（近一年實價登錄） ──────────────────
 // medPrice：中位數（萬/坪）
 // priceRange：[Q1, Q3]（25%～75% 分位）
@@ -21,6 +22,7 @@ const LINKOU_ZONES = [
   { name: "林口舊市區",  medPrice: 50.2, priceRange: [41.6, 62.2], count: 123, ageMed:  8, roomMed: 3, indoorPct: 0.670 },
   { name: "麗園國小",    medPrice: 39.1, priceRange: [29.3, 47.9], count:  82, ageMed: 19, roomMed: 3, indoorPct: 0.658 },
 ];
+// <<AUTO-ZONES-END>>
 
 // ── 林口各總價區間對應房產類型（供試算結果快速提示用） ───────
 // 格式：{ min, max, label, summary }
