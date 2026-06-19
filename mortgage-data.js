@@ -24,20 +24,20 @@ const LINKOU_ZONES = [
 // <<AUTO-TYPES-START>>  ← 此區塊由 update_prices.py 自動產生，請勿手改
 // ── 林口 成屋／預售／透天 三類行情（自動更新：2026-06-19；近一年） ──
 // 來源：新北開放平臺 實價登錄 — 成屋(ACCE802D，透天同源用建物型態拆出)、預售(9238CCC2)
-// 單價=(總價−車位價)/不含車位坪/10000；排除車位綁約；預售排除解約、無屋齡
+// 單價=(總價−車位價)/不含車位坪/10000（與地段表同口徑）；預售排除解約、無屋齡
 // calc=true 可依預算精準試算坪數；false 樣本少、僅作總價門檻參考
 const LINKOU_TYPES = [
   { key: "resale", name: "成屋", sub: "電梯大樓／華廈", tag: "看屋即入住",
-    unit: 46.8, unitRange: [39.1, 55.4], totalMed: 1688, ageMed: 12, pingMed: 34.3, roomMed: 3,
-    n: 383, window: "近一年", calc: true,
+    unit: 50.4, unitRange: [43.2, 57.0], totalMed: 1779, ageMed: 12, pingMed: 35.2, roomMed: 3,
+    n: 654, window: "近一年", calc: true,
     note: "現成可看實屋、可立即入住，屋齡中位約 12 年。" },
   { key: "presale", name: "預售屋", sub: "興建中／全新", tag: "全新可分期",
     unit: 63.0, unitRange: [57.2, 69.0], totalMed: 1993, ageMed: null, pingMed: 27.5, roomMed: 2,
     n: 675, window: "近一年", calc: true,
     note: "全新、可依工程期分期付款；單價約比成屋高三成，需等交屋。" },
   { key: "house", name: "透天／別墅", sub: "獨棟含土地", tag: "樣本少·參考",
-    unit: 41.9, unitRange: [35.5, 50.3], totalMed: 3940, threshold: 3000, ageMed: 18, pingMed: 92.2, roomMed: 4,
-    n: 41, window: "近一年", calc: false,
-    note: "總價門檻約 3,000 萬起、中位約 3,940 萬；近一年林口僅 41 筆成交，僅供方向參考。" },
+    unit: 44.1, unitRange: [38.9, 49.7], totalMed: 3780, threshold: 3000, ageMed: 18, pingMed: 85.1, roomMed: 4,
+    n: 58, window: "近一年", calc: false,
+    note: "總價門檻約 3,000 萬起、中位約 3,780 萬；近一年林口僅 58 筆成交，僅供方向參考。" },
 ];
 // <<AUTO-TYPES-END>>
