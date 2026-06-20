@@ -1,11 +1,10 @@
 name: 更新林口實價登錄單價
 
-# 先用「手動觸發」在雲端 dry-run，確認 mortgage-data.js diff 正確後，
-# 再把下面 schedule 的註解打開，改為每月自動更新。
+# 手動觸發保留（可隨時在雲端 dry-run）；schedule 已啟用，每月自動更新。
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 20 1 * *'   # 每月 1 號 20:00 UTC = 台灣 2 號 04:00
+  schedule:
+    - cron: '0 20 1 * *'   # 每月 1 號 20:00 UTC = 台灣 2 號 04:00
 
 permissions:
   contents: write             # 允許 job 內 git push 回 main
