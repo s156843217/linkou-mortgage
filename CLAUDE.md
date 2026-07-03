@@ -7,14 +7,14 @@
 ## 基本事實
 
 - 線上：https://s156843217.github.io/linkou-mortgage/ （push `main` → Pages 自動上線）。
-- 但這個 repo 有一件**全生態系唯一**的東西：**實價登錄自動更新 pipeline**。
 
-## ⚠ 自動更新 pipeline（關站前必須先遷移，見 DEPLOY.md 第 4 節）
+## 自動更新 pipeline（**2026-07-03 已遷入 toolbox**，這裡只剩舊副本）
 
-- `.github/workflows/update-prices.yml`：每月 1 號（台灣 04:00）自動跑 `update_prices.py`，
-  抓新北開放平台 API → 算各商圈近一年單價 → **覆寫 `mortgage-data.js` 的 `<<AUTO-ZONES-START>>`～`END` 段** → 自動 commit+push。
-- 所以：**這裡的 `mortgage-data.js` 地段數字是全生態系最新的（真相來源）**，my-project 與 toolbox 的副本要從這裡人工搬數字回去。
-- `update_prices.py` 會線上抓 `raw.githubusercontent.com/s156843217/linkou-school-zone/master/linkou-data.js` 取 HOUSE 門牌座標——**學區獨立站 repo 動之前必須先改這個 URL**。
+- 整合站 linkou-toolbox 已有自己的同套 pipeline，且抓自己的 linkou-data.js；**房貸數字的真相來源已改為 toolbox**。
+- 本 repo 的 cron 保留到關站（讓獨立站數字撐到最後），關站時只需刪 `.github/workflows/update-prices.yml`。
+- ⚠ 本 repo 的 `update_prices.py` 仍抓學區獨立站（linkou-school-zone master）的 raw 檔——所以那個 repo 在本站關掉前不能刪。
+
+- 運作方式：每月 1 號（台灣 04:00）自動跑 `update_prices.py`，抓新北開放平台 API → 算各商圈近一年單價 → 覆寫 `mortgage-data.js` 的 `<<AUTO-ZONES-START>>`～`END` 段 → 自動 commit+push。
 - 手動觸發與驗證（本機無 Python，只能在雲端跑）：
   ```
   gh workflow run update-prices.yml
